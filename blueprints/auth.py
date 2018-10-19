@@ -144,7 +144,7 @@ def register() -> Response:
     for char in passwordchars:
         if char in string.digits:
             d = 1
-        if d != 1:
+    if d != 1:
             return make_response({
                 "error": "you need at least one digit in your password"
             })

@@ -12,8 +12,6 @@ WORKDIR /app
 
 ADD . /app/
 
-RUN ls -lahs
-
 RUN apk add gcc musl-dev libffi-dev libressl-dev
 
 RUN pip install pipenv
