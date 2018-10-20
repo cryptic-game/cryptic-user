@@ -25,8 +25,8 @@ def information() -> Response:
         })
 
     return make_response({
-        session.as_simple_dict(),
-        User.get_by_id(session.owner).as_private_simple_dict()
+        "session": session.as_simple_dict(),
+        "user": User.get_by_id(session.owner).as_private_simple_dict()
     })
 
 
@@ -59,12 +59,18 @@ def login() -> Response:
                     "error": "already signed in"
                 })
 
-    password_validity = User.get_by_id(session.owner).validate_password(password)
+    user = User.get(username)
+    if not user:
+        return make_response({
+            "error": "incorrect password"
+        })
+
+    password_validity = user.validate_password(password)
 
     if password_validity:
         return make_response({
             # create session and return its token
-            "token": Session.create(session.owner).token
+            "token": Session.create(user.id).token
         })
     else:
         return make_response({
