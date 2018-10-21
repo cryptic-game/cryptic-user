@@ -23,4 +23,4 @@ To install the dependencies manually use:
 
 ## Docker-Hub
 
-This microservice will be soon online on docker-hub (https://hub.docker.com).
+This microservice is online on docker-hub (https://hub.docker.com/r/useto/cryptic-user/).
