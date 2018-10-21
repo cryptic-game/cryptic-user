@@ -2,7 +2,7 @@ FROM python:3.7-alpine
 
 MAINTAINER faq@cryptic-game.net
 
-EXPOSE 1240
+EXPOSE 80
 
 ENV MYSQL_PORT 3306
 ENV CROSS_ORIGIN True
