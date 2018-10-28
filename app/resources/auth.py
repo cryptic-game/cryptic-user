@@ -42,6 +42,8 @@ LogoutResponseSchema = api.model("Logout Response", {
 })
 
 SessionResponseSchema = api.model("Session Response", {
+    "owner": fields.String(example="12abc34d-5efg-67hi-89j1-klm2nop3pqrs",
+                            description="uuid of owner"),
     "token": fields.String(example="secretpassword1234",
                            description="session token"),
     "created": fields.DateTime(description="the datetime the session was created"),
@@ -78,7 +80,7 @@ class AuthAPI(Resource):
         if not check_password_hash(result.password, password):
             abort(400, "invalid password")
 
-        session = SessionModel.create(result.id)
+        session = SessionModel.create(result.uuid)
 
         return session.serialize
 
