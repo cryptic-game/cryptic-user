@@ -16,7 +16,7 @@ services:
   s_user:
     container_name: cryptic_dev_user_1
     restart: always
-    build: .
+    build: ./app
     ports:
         - "1240:80"
     depends_on:

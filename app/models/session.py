@@ -17,8 +17,9 @@ class SessionModel(db.Model):
 
     @property
     def serialize(self) -> dict:
+        valid = datetime.utcnow() <= self.expires
         _ = self.token
-        return self.__dict__
+        return {**self.__dict__, "valid": valid}
 
     @staticmethod
     def create(user: str) -> 'SessionModel':
