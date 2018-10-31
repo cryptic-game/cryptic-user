@@ -12,6 +12,7 @@ PyMySQL = "*"
 gunicorn = "*"
 flask-restplus = "*"
 flask-bcrypt = "*"
+requests = "*"
 
 [dev-packages]
 
