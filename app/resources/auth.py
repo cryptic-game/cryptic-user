@@ -1,11 +1,12 @@
 from flask_restplus import Namespace, Resource, fields, abort
 from models.user import UserModel
 from models.session import SessionModel
-from basics import ErrorSchema, require_session
+from basics import ErrorSchema, require_session, SuccessSchema
 from objects import api, db
 from flask import request
 from flask_bcrypt import check_password_hash
 import re
+from requests import put, Response
 
 LoginRequestSchema = api.model("Login Request", {
     "username": fields.String(required=True,
@@ -33,14 +34,6 @@ RegisterRequestSchema = api.model("Register Request", {
                               description="the user's password")
 })
 
-RegisterResponseSchema = api.model("Register Response", {
-    "ok": fields.Boolean(description="was successfully registered")
-})
-
-LogoutResponseSchema = api.model("Logout Response", {
-    "ok": fields.Boolean(description="was successfully logged out")
-})
-
 SessionResponseSchema = api.model("Session Response", {
     "owner": fields.String(example="12abc34d-5efg-67hi-89j1-klm2nop3pqrs",
                            description="uuid of owner"),
@@ -54,7 +47,7 @@ SessionResponseSchema = api.model("Session Response", {
 auth_api = Namespace('auth')
 
 
-@auth_api.route('/')
+@auth_api.route('')
 @auth_api.doc("Authentication Application Programming Interface")
 class AuthAPI(Resource):
 
@@ -87,7 +80,7 @@ class AuthAPI(Resource):
 
     @auth_api.doc("Register")
     @auth_api.expect(RegisterRequestSchema, validate=True)
-    @auth_api.marshal_with(RegisterResponseSchema)
+    @auth_api.marshal_with(SuccessSchema)
     @auth_api.response(400, "Invalid Input", ErrorSchema)
     def put(self):
         username = request.json["username"]
@@ -126,14 +119,34 @@ class AuthAPI(Resource):
         if UserModel.query.filter_by(email=email).first() is not None:
             abort(400, "email address already used")
 
-        UserModel.create(username, password, email)
+        user: UserModel = UserModel.create(username, password, email)
+
+        session: SessionModel = SessionModel.create(user.uuid)
+
+        response: Response = put(api.app.config["DEVICE_API"] + "device/private", headers={
+            "Token": session.token
+        })
+
+        if response.status_code != 200:
+            # Rollback
+            db.session.delete(session)
+            db.session.delete(user)
+            db.session.commit()
+            try:
+                msg: str = session.json()["message"]
+                abort(400, "Nested error from device api:" + msg)
+            except Exception:
+                abort(400, "error in device api")
+
+        db.session.delete(session)
+        db.session.commit()
 
         return {
             "ok": True
         }
 
     @auth_api.doc("Logout", security="token")
-    @auth_api.marshal_with(LogoutResponseSchema)
+    @auth_api.marshal_with(SuccessSchema)
     @auth_api.response(400, "Invalid Input", ErrorSchema)
     @require_session
     def delete(self, session):

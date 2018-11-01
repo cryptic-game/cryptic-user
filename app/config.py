@@ -18,7 +18,10 @@ to_load: Union[str, Tuple[str, bool]] = [
 
     # flask-restplus
     ("SWAGGER_UI_JSONEDITOR", True),
-    ("RESTPLUS_MASK_SWAGGER", False)
+    ("RESTPLUS_MASK_SWAGGER", False),
+
+    # other apis
+    ("DEVICE_API", "http://localhost:1241/")
 ]
 
 # the final configuration dict
