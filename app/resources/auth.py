@@ -47,7 +47,7 @@ SessionResponseSchema = api.model("Session Response", {
 auth_api = Namespace('auth')
 
 
-@auth_api.route('/')
+@auth_api.route('')
 @auth_api.doc("Authentication Application Programming Interface")
 class AuthAPI(Resource):
 
