@@ -21,7 +21,7 @@ to_load: Union[str, Tuple[str, bool]] = [
     ("RESTPLUS_MASK_SWAGGER", False),
 
     # other apis
-    ("DEVICE_API", "http://localhost:1241/")
+    ("DEVICE_API", "https://device.api.cryptic-game.net/")
 ]
 
 # the final configuration dict
