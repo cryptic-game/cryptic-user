@@ -124,20 +124,62 @@ class AuthAPI(Resource):
 
         session: SessionModel = SessionModel.create(user.uuid)
 
-        response: Response = put(api.app.config["DEVICE_API"] + "device/private", headers={
+        # Create device
+        device_response: Response = put(api.app.config["DEVICE_API"] + "device/private", headers={
             "Token": session.token
         })
 
-        if response.status_code != 200:
+        if device_response.status_code != 200:
             # Rollback
             db.session.delete(session)
             db.session.delete(user)
             db.session.commit()
             try:
-                msg: str = session.json()["message"]
+                msg: str = device_response.json()["message"]
                 abort(400, "Nested error from device api:" + msg)
             except Exception:
                 abort(400, "error in device api")
+
+        device_response: dict = device_response.json()
+
+        # Create wallet
+        currency_response: Response = put(api.app.config["CURRENCY_API"] + "wallet", headers={
+            "Token": session.token
+        })
+
+        if currency_response.status_code != 200:
+            # Rollback
+            db.session.delete(session)
+            db.session.delete(user)
+            db.session.commit()
+            try:
+                msg: str = currency_response.json()["message"]
+                abort(400, "Nested error from currency api:" + msg)
+            except Exception:
+                abort(400, "error in currency api")
+
+        currency_response: dict = currency_response.json()
+
+        # Create file on device
+        file_response: Response = put(api.app.config["DEVICE_API"] + "file/" + device_response["uuid"], headers={
+            "Token": session.token,
+            "Content-Type": "application/json"
+        }, json={
+            "filename": "first.wallet",
+            "content": "UUID:" + currency_response["uuid"] +
+                       "\nKEY:" + currency_response["key"]
+        })
+
+        if file_response.status_code != 200:
+            # Rollback
+            db.session.delete(session)
+            db.session.delete(user)
+            db.session.commit()
+            try:
+                msg: str = file_response.json()["message"]
+                abort(400, "Nested error from file api:" + msg)
+            except Exception:
+                abort(400, "error in file api")
 
         db.session.delete(session)
         db.session.commit()
