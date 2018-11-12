@@ -7,6 +7,7 @@ from flask import request
 from flask_bcrypt import check_password_hash
 import re
 from requests import put, Response
+from typing import Optional
 
 LoginRequestSchema = api.model("Login Request", {
     "username": fields.String(required=True,
@@ -18,7 +19,7 @@ LoginRequestSchema = api.model("Login Request", {
 })
 
 LoginResponseSchema = api.model("Login Response", {
-    "token": fields.String(example="12abc34d-5efg-67hi-89j1-klm2nop3pqrs",
+    "token": fields.String(example="12abc34d5efg67hi89j1klm2nop3pqrs",
                            description="a login token"),
 })
 
@@ -35,7 +36,7 @@ RegisterRequestSchema = api.model("Register Request", {
 })
 
 SessionResponseSchema = api.model("Session Response", {
-    "owner": fields.String(example="12abc34d-5efg-67hi-89j1-klm2nop3pqrs",
+    "owner": fields.String(example="12abc34d5efg67hi89j1klm2nop3pqrs",
                            description="uuid of owner"),
     "token": fields.String(example="secretpassword1234",
                            description="session token"),
@@ -63,10 +64,10 @@ class AuthAPI(Resource):
     @auth_api.marshal_with(LoginResponseSchema)
     @auth_api.response(400, "Invalid Input", ErrorSchema)
     def post(self):
-        username = request.json["username"]
-        password = request.json["password"]
+        username: str = request.json["username"]
+        password: str = request.json["password"]
 
-        result = UserModel.query.filter_by(username=username).first()
+        result: Optional[UserModel] = UserModel.query.filter_by(username=username).first()
 
         if result is None:
             abort(400, "invalid username")
@@ -74,7 +75,7 @@ class AuthAPI(Resource):
         if not check_password_hash(result.password, password):
             abort(400, "invalid password")
 
-        session = SessionModel.create(result.uuid)
+        session: SessionModel = SessionModel.create(result.uuid)
 
         return session.serialize
 
@@ -83,9 +84,9 @@ class AuthAPI(Resource):
     @auth_api.marshal_with(SuccessSchema)
     @auth_api.response(400, "Invalid Input", ErrorSchema)
     def put(self):
-        username = request.json["username"]
-        password = request.json["password"]
-        email = request.json["email"]
+        username: str = request.json["username"]
+        password: str = request.json["password"]
+        email: str = request.json["email"]
 
         if len(username) < 3:
             abort(400, "username has to be longer than 2")
@@ -96,16 +97,16 @@ class AuthAPI(Resource):
         if not bool(re.search(r'\d', password)):
             abort(400, "password has to contain at least one number")
 
-        found_lower = False
-        found_upper = False
+        found_lower: bool = False
+        found_upper: bool = False
 
         for c in password:
             if found_lower and found_upper:
                 break
             if c.islower():
-                found_lower = True
+                found_lower: bool = True
             elif c.isupper():
-                found_upper = True
+                found_upper: bool = True
 
         if not (found_upper and found_lower):
             abort(400, "password has to contain lower and uppercase letters")
@@ -123,20 +124,62 @@ class AuthAPI(Resource):
 
         session: SessionModel = SessionModel.create(user.uuid)
 
-        response: Response = put(api.app.config["DEVICE_API"] + "device/private", headers={
+        # Create device
+        device_response: Response = put(api.app.config["DEVICE_API"] + "device/private", headers={
             "Token": session.token
         })
 
-        if response.status_code != 200:
+        if device_response.status_code != 200:
             # Rollback
             db.session.delete(session)
             db.session.delete(user)
             db.session.commit()
             try:
-                msg: str = session.json()["message"]
+                msg: str = device_response.json()["message"]
                 abort(400, "Nested error from device api:" + msg)
             except Exception:
                 abort(400, "error in device api")
+
+        device_response: dict = device_response.json()
+
+        # Create wallet
+        currency_response: Response = put(api.app.config["CURRENCY_API"] + "wallet", headers={
+            "Token": session.token
+        })
+
+        if currency_response.status_code != 200:
+            # Rollback
+            db.session.delete(session)
+            db.session.delete(user)
+            db.session.commit()
+            try:
+                msg: str = currency_response.json()["message"]
+                abort(400, "Nested error from currency api:" + msg)
+            except Exception:
+                abort(400, "error in currency api")
+
+        currency_response: dict = currency_response.json()
+
+        # Create file on device
+        file_response: Response = put(api.app.config["DEVICE_API"] + "file/" + device_response["uuid"], headers={
+            "Token": session.token,
+            "Content-Type": "application/json"
+        }, json={
+            "filename": "first.wallet",
+            "content": "UUID:" + currency_response["uuid"] +
+                       "\nKEY:" + currency_response["key"]
+        })
+
+        if file_response.status_code != 200:
+            # Rollback
+            db.session.delete(session)
+            db.session.delete(user)
+            db.session.commit()
+            try:
+                msg: str = file_response.json()["message"]
+                abort(400, "Nested error from file api:" + msg)
+            except Exception:
+                abort(400, "error in file api")
 
         db.session.delete(session)
         db.session.commit()

@@ -21,7 +21,12 @@ to_load: Union[str, Tuple[str, bool]] = [
     ("RESTPLUS_MASK_SWAGGER", False),
 
     # other apis
-    ("DEVICE_API", "https://device.api.cryptic-game.net/")
+    # default (online)
+    ("DEVICE_API", "https://device.api.cryptic-game.net/"),
+    ("CURRENCY_API", "https://currency.api.cryptic-game.net/")
+    # default (local)
+    # ("DEVICE_API", "http://localhost:1241/"),
+    # ("CURRENCY_API", "http://localhost:1242/")
 ]
 
 # the final configuration dict
