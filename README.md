@@ -3,6 +3,9 @@ cryptic-user
 
 The official user microservice of Cryptic (https://cryptic-game.net/).
 
+## API Documentation
+[Here.](DOCS.md)
+
 ## Testing with Docker
 
 If you want to test this microservice you can simply build and run a 
