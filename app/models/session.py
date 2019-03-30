@@ -1,19 +1,22 @@
-from objects import db
-from uuid import uuid4
 from datetime import datetime, timedelta
+from uuid import uuid4
+
+from sqlalchemy import Column, String, DateTime
+
+import objects_db as db
 
 EXPIRE_TIME: dict = {
     "days": 2
 }  # time after the token gets invalid
 
 
-class SessionModel(db.Model):
+class Session(db.base):
     __tablename__: str = "session"
 
-    token: db.Column = db.Column(db.String(32), primary_key=True, unique=True)
-    owner: db.Column = db.Column(db.String(32), nullable=False)
-    created: db.Column = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    expires: db.Column = db.Column(db.DateTime, nullable=False)
+    token: Column = Column(String(32), primary_key=True, unique=True)
+    owner: Column = Column(String(32), nullable=False)
+    created: Column = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expires: Column = Column(DateTime, nullable=False)
 
     @property
     def serialize(self) -> dict:
@@ -22,16 +25,17 @@ class SessionModel(db.Model):
         return {**self.__dict__, "valid": valid}
 
     @staticmethod
-    def create(user: str) -> 'SessionModel':
+    def create(user: str) -> dict:
         """
         Creates a new sessions for a specified user.
 
         :param user: The owner's id
-        :return: New session
+        :return: dict with status
         """
 
         # Create a new Session instance
-        session: SessionModel = SessionModel(
+
+        session: Session = Session(
             token=str(uuid4()).replace("-", ""),
             owner=user,
             expires=datetime.utcnow() + timedelta(**EXPIRE_TIME)
@@ -41,4 +45,4 @@ class SessionModel(db.Model):
         db.session.add(session)
         db.session.commit()
 
-        return session
+        return {"success": "Session has been created. ", "token": session.token, "expires": session.expires}
