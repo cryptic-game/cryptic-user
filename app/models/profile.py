@@ -31,6 +31,9 @@ class Profile(db.base):
         :return: Dict with status
         """
 
+        if "error" not in Profile.get(user_uuid):
+            return {"error": "Profile already exists for this user."}
+
         profile: Profile = Profile(
             user_uuid=user_uuid,
             name=name,
@@ -56,4 +59,5 @@ class Profile(db.base):
             return {"error": "Invalid user_uuid."}
         db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
             update({"description": description})
+        db.session.commit()
         return {"success": "Description has been updated.", "user_uuid": user_uuid}
