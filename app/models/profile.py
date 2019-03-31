@@ -54,10 +54,19 @@ class Profile(db.base):
         return {"success": profile.serialize}
 
     @staticmethod
-    def change_description(user_uuid, description):
+    def change_description(user_uuid: str, description: str) -> dict:
         if "error" in Profile.get(user_uuid):
             return {"error": "Invalid user_uuid."}
         db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
             update({"description": description})
         db.session.commit()
         return {"success": "Description has been updated.", "user_uuid": user_uuid}
+
+    @staticmethod
+    def update_hacks(user_uuid: str, hacks: int) -> dict:
+        if "error" in Profile.get(user_uuid):
+            return {"error": "Invalid user_uuid."}
+        db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
+            update({"num_hacks": hacks})
+        db.session.commit()
+        return {"success": "Number of hacks has been updated.", "user_uuid": user_uuid}

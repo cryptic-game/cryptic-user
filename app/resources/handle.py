@@ -4,8 +4,8 @@ from models.profile import Profile
 def handle(endpoint: list, data: dict) -> dict:
     """
     The handle method to get data from server to know what to do
-    :param endpoint: the action of the server 'create', 'get', 'description'
-    :param data: 'user_uuid', 'name', 'country', 'description'
+    :param endpoint: the action of the server 'create', 'get', 'description', 'hacks'
+    :param data: 'user_uuid', 'name', 'country', 'description', 'hacks'
     :return: user response for actions
     """
 
@@ -45,6 +45,20 @@ def handle(endpoint: list, data: dict) -> dict:
         user_uuid: str = data["user_uuid"]
         description: str = data["description"]
         return {"user_response": Profile.change_description(user_uuid, description)}
+    if endpoint[0] == "hacks":
+        if "user_uuid" not in data:
+            return {"user_response": {"error": "Key 'user_uuid' has to be set for endpoint hacks."}}
+        if type(data["user_uuid"]) is not str:
+            return {"user_response": {"error": "Key 'user_uuid' has to be string for endpoint hacks."}}
+        if "hacks" not in data:
+            return {"user_response": {"error": "Key 'hacks' has to be set for endpoint hacks."}}
+        if type(data["hacks"]) is not int:
+            return {"user_response": {"error": "Key 'hacks' has to be integer for endpoint hacks."}}
+        user_uuid: str = data["user_uuid"]
+        hacks: int = data["hacks"]
+        if hacks < 0:
+            return {"user_response": {"error": "Key 'hacks' can not be negative."}}
+        return Profile.update_hacks(user_uuid, hacks)
     return {"user_response": {"error": "Endpoint is not supported."}}
 
 
