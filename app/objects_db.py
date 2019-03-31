@@ -1,7 +1,8 @@
+import sqlalchemy
 from sqlalchemy import orm
 from sqlalchemy.ext.declarative import declarative_base
+
 from config_db import config
-import sqlalchemy
 
 base = declarative_base()
 
@@ -10,4 +11,4 @@ uri = "sqlite:///" + config['STORAGE_LOCATION'] + "user.db"
 engine = sqlalchemy.create_engine(uri)
 base.metadata.bind = engine
 Session = orm.sessionmaker(bind=engine)
-session = Session()
+session: orm.session.Session = Session()
