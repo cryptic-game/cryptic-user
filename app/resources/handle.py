@@ -59,6 +59,18 @@ def handle(endpoint: list, data: dict) -> dict:
         if hacks < 0:
             return {"user_response": {"error": "Key 'hacks' can not be negative."}}
         return Profile.update_hacks(user_uuid, hacks)
+    if endpoint[0] == "cluster":
+        if "user_uuid" not in data:
+            return {"user_response": {"error": "Key 'user_uuid' has to be set for endpoint cluster."}}
+        if type(data["user_uuid"]) is not str:
+            return {"user_response": {"error": "Key 'user_uuid' has to be string for endpoint cluster."}}
+        if "cluster" not in data:
+            return {"user_response": {"error": "Key 'cluster' has to be set for endpoint cluster."}}
+        if type(data["cluster"]) is not int and data["cluster"] is not None:
+            return {"user_response": {"error": "Key 'cluster' has to be integer or null for endpoint cluster."}}
+        user_uuid: str = data["user_uuid"]
+        cluster: int = data["cluster"]
+        return Profile.change_cluster(user_uuid, cluster)
     return {"user_response": {"error": "Endpoint is not supported."}}
 
 

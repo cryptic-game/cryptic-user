@@ -75,3 +75,12 @@ class Profile(db.base):
             update({"num_hacks": hacks})
         db.session.commit()
         return {"success": "Number of hacks has been updated.", "user_uuid": user_uuid}
+
+    @staticmethod
+    def change_cluster(user_uuid: str, cluster: int) -> dict:
+        if "error" in Profile.get(user_uuid):
+            return {"error": "Invalid user_uuid."}
+        db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
+            update({"cluster_id": cluster})
+        db.session.commit()
+        return {"success": "Cluster has been updated.", "user_uuid": user_uuid}
