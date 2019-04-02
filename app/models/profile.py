@@ -19,7 +19,12 @@ class Profile(db.base):
     @property
     def serialize(self) -> dict:
         _ = self.user_uuid
-        return {**self.__dict__}
+        result: dict = {**self.__dict__}
+        if "_sa_instance_state" in result:
+            del result["_sa_instance_state"]
+        registered: datetime.datetime = result["registered"]
+        result["registered"] = int(registered.timestamp() * 1000)
+        return result
 
     @staticmethod
     def create(user_uuid: str, name: str, country: str) -> dict:
