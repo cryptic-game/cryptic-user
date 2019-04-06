@@ -1,20 +1,22 @@
 import datetime
+from typing import Union, NoReturn
 
 from sqlalchemy import Column, Integer, String, DateTime
 
-import objects_db as db
+import objects as db
+from schemes import *
 
 
-class Profile(db.base):
+class Profile(db.Base):
     __tablename__: str = "profile"
 
-    user_uuid: Column = Column(String(36), primary_key=True, unique=True)
-    name: Column = Column(String(32))
-    registered: Column = Column(DateTime, nullable=False)
-    cluster_id: Column = Column(Integer)
-    description: Column = Column(String(256), default='')
-    country: Column = Column(String(32))
-    num_hacks: Column = Column(Integer, default=0)
+    user_uuid: Union[Column, str] = Column(String(36), primary_key=True, unique=True)
+    name: Union[Column, str] = Column(String(32))
+    registered: Union[Column, datetime.datetime] = Column(DateTime, nullable=False)
+    cluster_id: Union[Column, int] = Column(Integer)
+    description: Union[Column, str] = Column(String(256), default='')
+    country: Union[Column, str] = Column(String(32))
+    num_hacks: Union[Column, int] = Column(Integer, default=0)
 
     @property
     def serialize(self) -> dict:
@@ -27,7 +29,7 @@ class Profile(db.base):
         return result
 
     @staticmethod
-    def create(user_uuid: str, name: str, country: str) -> dict:
+    def create(user_uuid: str, name: str, country: str) -> NoReturn:
         """
         Creates a new profile
         :param user_uuid: The UUID of the user
@@ -36,8 +38,7 @@ class Profile(db.base):
         :return: Dict with status
         """
 
-        if "error" not in Profile.get(user_uuid):
-            return {"error": "Profile already exists for this user."}
+        assert not Profile.exists(user_uuid), profile_already_exists
 
         profile: Profile = Profile(
             user_uuid=user_uuid,
@@ -49,38 +50,34 @@ class Profile(db.base):
         db.session.add(profile)
         db.session.commit()
 
-        return {"success": "Profile has been created.", "user_uuid": user_uuid, "name": name}
+    @staticmethod
+    def exists(user_uuid: str) -> bool:
+        profile: Profile = db.session.query(Profile).get(user_uuid)
+        return profile is not None
 
     @staticmethod
     def get(user_uuid: str) -> dict:
         profile: Profile = db.session.query(Profile).get(user_uuid)
-        if profile is None:
-            return {"error": "Invalid user_uuid."}
-        return {"success": profile.serialize}
+        assert profile is not None, invalid_useruuid
+        return profile.serialize
 
     @staticmethod
-    def change_description(user_uuid: str, description: str) -> dict:
-        if "error" in Profile.get(user_uuid):
-            return {"error": "Invalid user_uuid."}
+    def change_description(user_uuid: str, description: str) -> NoReturn:
+        assert Profile.exists(user_uuid), profile_already_exists
         db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
             update({"description": description})
         db.session.commit()
-        return {"success": "Description has been updated.", "user_uuid": user_uuid}
 
     @staticmethod
-    def update_hacks(user_uuid: str, hacks: int) -> dict:
-        if "error" in Profile.get(user_uuid):
-            return {"error": "Invalid user_uuid."}
+    def update_hacks(user_uuid: str, hacks: int) -> NoReturn:
+        assert Profile.exists(user_uuid), profile_already_exists
         db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
             update({"num_hacks": hacks})
         db.session.commit()
-        return {"success": "Number of hacks has been updated.", "user_uuid": user_uuid}
 
     @staticmethod
-    def change_cluster(user_uuid: str, cluster: int) -> dict:
-        if "error" in Profile.get(user_uuid):
-            return {"error": "Invalid user_uuid."}
+    def change_cluster(user_uuid: str, cluster: int) -> NoReturn:
+        assert Profile.exists(user_uuid), profile_already_exists
         db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
             update({"cluster_id": cluster})
         db.session.commit()
-        return {"success": "Cluster has been updated.", "user_uuid": user_uuid}

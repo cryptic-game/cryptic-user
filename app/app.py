@@ -1,6 +1,9 @@
-from objects_db import base, engine
-from resources.handle import m
+from cryptic import MicroService
+
+from objects import Base, engine
+
+m: MicroService = MicroService(name="user")
 
 if __name__ == '__main__':
-    base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     m.run()
