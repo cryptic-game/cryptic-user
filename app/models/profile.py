@@ -1,10 +1,10 @@
 import datetime
-from typing import Union, NoReturn
+from typing import Union, NoReturn, Optional
 
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.sql import exists
 
 import objects as db
-from schemes import *
 
 
 class Profile(db.Base):
@@ -18,6 +18,18 @@ class Profile(db.Base):
     country: Union[Column, str] = Column(String(32))
     num_hacks: Union[Column, int] = Column(Integer, default=0)
 
+    def change_description(self, description: str) -> NoReturn:
+        self.description = description
+        db.session.commit()
+
+    def update_hacks(self, hacks: int) -> NoReturn:
+        self.num_hacks = hacks
+        db.session.commit()
+
+    def change_cluster(self, cluster: int) -> NoReturn:
+        self.cluster_id = cluster
+        db.session.commit()
+
     @property
     def serialize(self) -> dict:
         _ = self.user_uuid
@@ -25,11 +37,19 @@ class Profile(db.Base):
         if "_sa_instance_state" in result:
             del result["_sa_instance_state"]
         registered: datetime.datetime = result["registered"]
-        result["registered"] = int(registered.timestamp() * 1000)
+        result["registered"]: int = int(registered.timestamp() * 1000)
         return result
 
     @staticmethod
-    def create(user_uuid: str, name: str, country: str) -> NoReturn:
+    def exists(user_uuid: str) -> bool:
+        return db.session.query(exists().where(Profile.user_uuid == user_uuid)).scalar() == 1
+
+    @staticmethod
+    def get(user_uuid: str) -> Optional['Profile']:
+        return db.session.query(Profile).get(user_uuid)
+
+    @staticmethod
+    def create(user_uuid: str, name: str, country: str) -> bool:
         """
         Creates a new profile
         :param user_uuid: The UUID of the user
@@ -37,8 +57,6 @@ class Profile(db.Base):
         :param country: The country of the user
         :return: Dict with status
         """
-
-        assert not Profile.exists(user_uuid), profile_already_exists
 
         profile: Profile = Profile(
             user_uuid=user_uuid,
@@ -50,34 +68,4 @@ class Profile(db.Base):
         db.session.add(profile)
         db.session.commit()
 
-    @staticmethod
-    def exists(user_uuid: str) -> bool:
-        profile: Profile = db.session.query(Profile).get(user_uuid)
-        return profile is not None
-
-    @staticmethod
-    def get(user_uuid: str) -> dict:
-        profile: Profile = db.session.query(Profile).get(user_uuid)
-        assert profile is not None, invalid_useruuid
-        return profile.serialize
-
-    @staticmethod
-    def change_description(user_uuid: str, description: str) -> NoReturn:
-        assert Profile.exists(user_uuid), profile_already_exists
-        db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
-            update({"description": description})
-        db.session.commit()
-
-    @staticmethod
-    def update_hacks(user_uuid: str, hacks: int) -> NoReturn:
-        assert Profile.exists(user_uuid), profile_already_exists
-        db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
-            update({"num_hacks": hacks})
-        db.session.commit()
-
-    @staticmethod
-    def change_cluster(user_uuid: str, cluster: int) -> NoReturn:
-        assert Profile.exists(user_uuid), profile_already_exists
-        db.session.query(Profile).filter(Profile.user_uuid == user_uuid). \
-            update({"cluster_id": cluster})
-        db.session.commit()
+        return True

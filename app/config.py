@@ -1,7 +1,8 @@
 import os
+from typing import Tuple, List
 
 # microservice socket host und port storage location
-to_load = [
+to_load: List[Tuple[str, str]] = [
     ('STORAGE_LOCATION', 'db_data/'),
 ]
 
